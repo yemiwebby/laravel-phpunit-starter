@@ -7,6 +7,7 @@ use App\Models\Investment;
 use App\Models\Strategy;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use App\Models\User;
 
 class InvestmentController extends Controller {
 
@@ -19,25 +20,36 @@ class InvestmentController extends Controller {
     }
 
     public function store(Request $request) {
-
-        $requestArray = $request->only(
-            [
-                'user_id',
-                'strategy_id',
-                'amount',
-            ]
-        );
-
+    
+        $userId = $request->input('user_id');
+        $strategyId = $request->input('strategy_id');
+        $amount = $request->input('amount');
+        
+        if (is_null($userId) || is_null($strategyId) || is_null($amount)) {
+            return $this->errorResponse(
+                'User ID, Strategy ID and Amount are required',
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+        
+        $strategy = Strategy::findOrFail($strategyId);
+        $user = User::findOrFail($userId);
+        
+        $investment = [
+            'user_id'     => $user->id,
+            'strategy_id' => $strategy->id,
+            'amount'      => $amount
+        ];
+        
         $successful = (bool)random_int(0, 1);
-        $requestArray['successful'] = $successful;
-
-        $strategy = Strategy::find($requestArray['strategy_id']);
+        $investment['successful'] = $successful;
+        
         $multiplier = $successful ?
             $strategy->yield :
             $strategy->relief;
-        $requestArray['returns'] = $requestArray['amount'] * $multiplier;
-        $investment = Investment::create($requestArray);
-
+        $investment['returns'] = $amount * $multiplier;
+        $investment = Investment::create($investment);
+        
         return $this->successResponse(
             new InvestmentResource($investment),
             true
