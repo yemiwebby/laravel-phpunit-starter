@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Response;
 use App\Http\Resources\InvestmentResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
@@ -20,6 +21,17 @@ class UserController extends Controller {
 
     public function store(Request $request) {
 
+        $firstName = $request->input('first_name');
+        $lastName = $request->input('last_name');
+        $email = $request->input('email');
+
+        if (is_null($firstName) || is_null($lastName) || is_null($email)) {
+            return $this->errorResponse(
+                'First Name, Last Name and Email are required',
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
         $user = User::create(
             [
                 'first_name' => $request->input('first_name'),
@@ -29,7 +41,7 @@ class UserController extends Controller {
         );
         Wallet::create(
             [
-                'balance' => 100,
+                'balance' => 0,
                 'user_id' => $user->id
             ]
         );
